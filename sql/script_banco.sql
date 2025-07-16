@@ -17,16 +17,16 @@ CREATE TABLE Filme(
   num_filme INT NOT NULL,
   nome VARCHAR(80) NOT NULL,
   ano DECIMAL(4),
-  duracao INT NOT NULL,
+  duracao INT,
   PRIMARY KEY (num_filme)
 );
 
 CREATE TABLE Exibicao(
   num_filme INT NOT NULL,
   num_canal INT NOT NULL,
-  data DATE NOT NULL,
+  ano DATE NOT NULL,
   hora TIME NOT NULL,
-  PRIMARY KEY (num_filme, num_canal, data, hora)
+  PRIMARY KEY (num_filme, num_canal, ano, hora)
 );
 
 CREATE TABLE Elenco(
@@ -47,7 +47,7 @@ INSERT INTO Canal VALUES
 INSERT INTO Filme VALUES
 (90001, 'Avatar', 2022, 162),
 (90002, 'Titanic', 1997, 194),
-(90003, 'Star Wars', 2019),
+(90003, 'Star Wars', 2019, null),
 (90004, 'Vingadores Ultimato', 2019, 180),
 (90005, 'Lilo & Stitch', 2025, 108),
 (90006, 'O Poderoso Chefão', 1972, 175),
@@ -116,7 +116,7 @@ INSERT INTO Elenco VALUES
 (90004, 'Zoë Saldaña', 0),
 (90005, 'Maia Kealoha', 1),
 (90005, 'Sydney Agudong', 0),
-(90005, 'Billy Magnussen', 0)
+(90005, 'Billy Magnussen', 0),
 (90006, 'Marlon Brando', 1),
 (90006, 'Al Pacino', 1),
 (90006, 'Diane Keaton', 0),
