@@ -16,7 +16,7 @@ CREATE TABLE Canal(
 CREATE TABLE Filme(
   num_filme INT NOT NULL,
   nome VARCHAR(80) NOT NULL,
-  ano DECIMAL(4),
+  ano DECIMAL(4) NOT NULL,
   duracao INT,
   PRIMARY KEY (num_filme)
 );
@@ -26,7 +26,7 @@ CREATE TABLE Exibicao(
   num_canal INT NOT NULL,
   data_exibicao DATE NOT NULL,
   hora_exibicao TIME NOT NULL,
-  PRIMARY KEY (num_filme, num_canal, ano, hora)
+  PRIMARY KEY (num_filme, num_canal, data_exibicao, hora_exibicao)
 );
 
 CREATE TABLE Elenco(

@@ -1,96 +1,120 @@
 import streamlit as st
 import pandas as pd
 import sys, os
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir)))
-import crud_elenco, crud_filme
+import crud_elenco
+import crud_filme # Para listar filmes
 
 st.title("🎭 Gerenciar Elenco")
-st.markdown("Nesta seção, é possível **adicionar** atores ao elenco de filmes, **atualizar** informações de protagonismo ou **remover** atores do elenco.")
+st.markdown("Nesta seção, é possível **adicionar**, **editar** o status de protagonista ou **remover** membros do elenco de filmes.")
 
 tabela_placeholder = st.empty()
 
 
-st.subheader("Adicionar Ator/Atriz a um Filme")
-filme_data_ok, filmes = crud_filme.listar_filmes()
-filme_opcoes = []
-if filme_data_ok:
+st.subheader("Adicionar Ator ao Elenco")
+# Obter lista de filmes para seleção
+filmes_ok, filmes = crud_filme.listar_filmes()
+filme_opcoes = ["Selecione um filme"]
+filme_map = {}
+if filmes_ok and filmes:
     for f in filmes:
         filme_opcoes.append(f"{f['num_filme']} - {f['nome']}")
-if filme_opcoes:
-    with st.form(key="form_adicionar_elenco"):
-        filme_escolhido = st.selectbox("Filme:", filme_opcoes)
-        ator_nome = st.text_input("Nome do Ator/Atriz")
-        protagonista_flag = st.checkbox("Protagonista?")
-        submit_add = st.form_submit_button("Adicionar")
-    if submit_add:
-        film_id = int(filme_escolhido.split(" - ")[0])
-        success, msg = crud_elenco.adicionar_elenco(film_id, ator_nome, protagonista_flag)
+        filme_map[f"{f['num_filme']} - {f['nome']}"] = f['num_filme']
+else:
+    st.warning("Nenhum filme cadastrado. Cadastre filmes antes de adicionar elenco.")
+
+
+with st.form(key="form_adicionar_elenco"):
+    filme_selecionado_str = st.selectbox("Filme:", options=filme_opcoes)
+    nome_ator = st.text_input("Nome do ator/atriz")
+    protagonista = st.checkbox("É protagonista?")
+    submit_add = st.form_submit_button("Adicionar")
+
+if submit_add:
+    if filme_selecionado_str == "Selecione um filme":
+        st.error("Por favor, selecione um filme.")
+    else:
+        num_filme = filme_map[filme_selecionado_str]
+        success, msg, sql_query = crud_elenco.adicionar_elenco(num_filme, nome_ator, protagonista)
         if success:
             st.success(msg)
         else:
             st.error(msg)
+        if sql_query:
+            st.code(sql_query, language="sql")
+
+
+st.subheader("Atualizar Status de Protagonista")
+elenco_ok, elenco_atual = crud_elenco.listar_elenco()
+elenco_opcoes = ["Selecione um ator/filme"]
+elenco_map = {} # Key: "Filme - Ator", Value: (num_filme, nome_ator)
+
+if elenco_ok and elenco_atual:
+    for e in elenco_atual:
+        opcao = f"{e['nome_filme']} - {e['nome_ator']}"
+        elenco_opcoes.append(opcao)
+        elenco_map[opcao] = {'num_filme': e['num_filme'], 'nome_ator': e['nome_ator'], 'protagonista': e['protagonista']}
 else:
-    st.info("Cadastre pelo menos um filme antes de adicionar elenco.")
+    st.info("Nenhum elenco cadastrado para atualizar.")
 
-
-st.subheader("Atualizar Elenco (Protagonista)")
-elenco_data_ok, elenco = crud_elenco.listar_elenco()
-elenco_opcoes = []
-if elenco_data_ok:
-    for e in elenco:
-        elenco_opcoes.append(f"{e['num_filme']} - {e['filme_nome']} | {e['nome_ator']}")
-if elenco_opcoes:
-    escolha = st.selectbox("Selecione o registro de elenco para editar:", elenco_opcoes)
-    if escolha:
-        partes = escolha.split(" | ")
-        filme_part = partes[0]  
-        ator_part = partes[1]   
-        filme_id = int(filme_part.split(" - ")[0])
-        ator_nome_sel = ator_part
+if elenco_opcoes and len(elenco_opcoes) > 1: # Verifica se há opções além do placeholder
+    escolha_elenco_update = st.selectbox("Selecione o registro de elenco para editar:", options=elenco_opcoes, key="update_elenco_select")
+    
+    if escolha_elenco_update != "Selecione um ator/filme":
+        selected_data = elenco_map[escolha_elenco_update]
+        current_protagonista_status = selected_data['protagonista']
         
-        atual_protag = False
-        for e in elenco:
-            if e['num_filme'] == filme_id and e['nome_ator'] == ator_nome_sel:
-                atual_protag = True if e['protagonista'] in [1, True] else False
-                break
         with st.form(key="form_atualizar_elenco"):
-            novo_protagonista = st.checkbox("Protagonista?", value=atual_protag)
+            novo_protagonista_status = st.checkbox("É protagonista?", value=current_protagonista_status)
             submit_update = st.form_submit_button("Atualizar")
+        
         if submit_update:
-            success, msg = crud_elenco.atualizar_elenco(filme_id, ator_nome_sel, novo_protagonista)
+            success, msg, sql_query = crud_elenco.atualizar_elenco(selected_data['num_filme'], selected_data['nome_ator'], novo_protagonista_status)
             if success:
                 st.success(msg)
             else:
                 st.error(msg)
+            if sql_query:
+                st.code(sql_query, language="sql")
 else:
-    st.info("Nenhum registro de elenco disponível para atualizar.")
+    if elenco_ok and not elenco_atual: # Se a lista está vazia
+        st.info("Nenhum elenco cadastrado para atualizar.")
+    elif not elenco_ok: # Se houve erro ao listar
+        st.error(elenco_atual) # elenco_atual contém a mensagem de erro neste caso
 
 
-st.subheader("Remover Ator/Atriz do Elenco")
-if elenco_opcoes:
+st.subheader("Remover Ator do Elenco")
+if elenco_opcoes and len(elenco_opcoes) > 1:
     with st.form(key="form_remover_elenco"):
-        escolha_rem = st.selectbox("Selecione o registro de elenco para remover:", elenco_opcoes, key="elenco_del")
+        escolha_elenco_del = st.selectbox("Selecione o registro de elenco para remover:", options=elenco_opcoes, key="del_elenco_select")
         submit_del = st.form_submit_button("Remover")
+    
     if submit_del:
-        partes = escolha_rem.split(" | ")
-        filme_part = partes[0]
-        ator_part = partes[1]
-        filme_id = int(filme_part.split(" - ")[0])
-        ator_nome_sel = ator_part
-        success, msg = crud_elenco.remover_elenco(filme_id, ator_nome_sel)
-        if success:
-            st.success(msg)
+        if escolha_elenco_del == "Selecione um ator/filme":
+            st.error("Por favor, selecione um registro de elenco para remover.")
         else:
-            st.error(msg)
+            selected_data = elenco_map[escolha_elenco_del]
+            success, msg, sql_query = crud_elenco.remover_elenco(selected_data['num_filme'], selected_data['nome_ator'])
+            if success:
+                st.success(msg)
+            else:
+                st.error(msg)
+            if sql_query:
+                st.code(sql_query, language="sql")
 else:
-    st.info("Nenhum registro de elenco disponível para remover.")
+    if elenco_ok and not elenco_atual:
+        st.info("Nenhum elenco cadastrado para remover.")
+    elif not elenco_ok:
+        st.error(elenco_atual)
 
 
+# Exibir tabela de elenco
 elenco_ok, elenco_data = crud_elenco.listar_elenco()
 if elenco_ok:
     df = pd.DataFrame(elenco_data)
-    df.columns = ["Código Filme", "Filme", "Ator/Atriz", "Protagonista"]
-    df['Protagonista'] = df['Protagonista'].replace({0: 'Não', 1: 'Sim', False: 'Não', True: 'Sim'})
+    df.columns = ["Cód. Filme", "Filme", "Ator/Atriz", "Protagonista"]
+    df["Protagonista"] = df["Protagonista"].apply(lambda x: "Sim" if x else "Não")
     tabela_placeholder.dataframe(df, use_container_width=True)
 else:
     tabela_placeholder.error(elenco_data)

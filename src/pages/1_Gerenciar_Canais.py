@@ -17,11 +17,13 @@ with st.form(key="form_adicionar_canal"):
     novo_nome = st.text_input("Nome do canal")
     submit_add = st.form_submit_button("Adicionar")
 if submit_add:
-    success, msg = crud_canal.adicionar_canal(int(novo_num), novo_nome)
+    success, msg, sql_query = crud_canal.adicionar_canal(int(novo_num), novo_nome)
     if success:
         st.success(msg)
     else:
         st.error(msg)
+    if sql_query:
+        st.code(sql_query, language="sql")
 
 
 st.subheader("Atualizar Canal")
@@ -42,11 +44,13 @@ if canal_opcoes:
             novo_nome_canal = st.text_input("Novo nome do canal", value=_selected_canal_nome)
             submit_update = st.form_submit_button("Atualizar")
         if submit_update and _selected_canal_id is not None:
-            success, msg = crud_canal.atualizar_canal(_selected_canal_id, novo_nome_canal)
+            success, msg, sql_query = crud_canal.atualizar_canal(_selected_canal_id, novo_nome_canal)
             if success:
                 st.success(msg)
             else:
                 st.error(msg)
+            if sql_query:
+                st.code(sql_query, language="sql")
 else:
     st.info("Nenhum canal cadastrado para atualizar.")
 
@@ -58,11 +62,13 @@ if canal_opcoes:
         submit_del = st.form_submit_button("Remover")
     if submit_del:
         canal_id = int(escolha_del.split(" - ")[0])
-        success, msg = crud_canal.remover_canal(canal_id)
+        success, msg, sql_query = crud_canal.remover_canal(canal_id)
         if success:
             st.success(msg)
         else:
             st.error(msg)
+        if sql_query:
+            st.code(sql_query, language="sql")
 else:
     st.info("Nenhum canal cadastrado para remover.")
 

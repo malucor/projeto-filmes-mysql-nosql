@@ -7,11 +7,14 @@ import db_connection
 def adicionar_canal(num_canal: int, nome: str):
     """
     Insere um novo canal na tabela Canal.
-    Retorna (True, mensagem_sucesso) ou (False, mensagem_erro).
+    Retorna (True, mensagem_sucesso, sql_query) ou (False, mensagem_erro, None).
     """
     conn = db_connection.get_connection()
     if conn is None:
-        return (False, "Falha na conexão com o banco de dados.")
+        return (False, "Falha na conexão com o banco de dados.", None)
+    
+    sql_query = f"INSERT INTO Canal (num_canal, nome) VALUES ({num_canal}, '{nome}')"
+    
     try:
         cursor = conn.cursor()
         cursor.execute(
@@ -19,13 +22,13 @@ def adicionar_canal(num_canal: int, nome: str):
             (num_canal, nome)
         )
         conn.commit()
-        return (True, f"Canal {nome} (#{num_canal}) adicionado com sucesso.")
+        return (True, f"Canal {nome} (#{num_canal}) adicionado com sucesso.", sql_query)
     except mysql.connector.Error as e:
         conn.rollback()
         if e.errno == 1062:
-            return (False, "Erro: Já existe um canal com esse número (chave duplicada).")
+            return (False, "Erro: Já existe um canal com esse número (chave duplicada).", None)
         else:
-            return (False, f"Erro ao adicionar canal: {e.msg}")
+            return (False, f"Erro ao adicionar canal: {e.msg}", None)
     finally:
         conn.close()
 
@@ -52,11 +55,14 @@ def listar_canais():
 def atualizar_canal(num_canal: int, novo_nome: str):
     """
     Atualiza o nome de um canal existente.
-    Retorna (True, mensagem_sucesso) ou (False, mensagem_erro).
+    Retorna (True, mensagem_sucesso, sql_query) ou (False, mensagem_erro, None).
     """
     conn = db_connection.get_connection()
     if conn is None:
-        return (False, "Falha na conexão com o banco de dados.")
+        return (False, "Falha na conexão com o banco de dados.", None)
+        
+    sql_query = f"UPDATE Canal SET nome = '{novo_nome}' WHERE num_canal = {num_canal}"
+
     try:
         cursor = conn.cursor()
         cursor.execute(
@@ -65,35 +71,37 @@ def atualizar_canal(num_canal: int, novo_nome: str):
         )
         conn.commit()
         if cursor.rowcount == 0:
-            return (False, "Nenhum canal encontrado com o número fornecido.")
-        return (True, f"Canal #{num_canal} atualizado com sucesso.")
+            return (False, "Nenhum canal encontrado com o número fornecido.", None)
+        return (True, f"Canal #{num_canal} atualizado com sucesso.", sql_query)
     except mysql.connector.Error as e:
         conn.rollback()
-        return (False, f"Erro ao atualizar canal: {e.msg}")
+        return (False, f"Erro ao atualizar canal: {e.msg}", None)
     finally:
         conn.close()
 
 def remover_canal(num_canal: int):
     """
     Remove um canal da tabela Canal.
-    Retorna (True, mensagem_sucesso) ou (False, mensagem_erro).
+    Retorna (True, mensagem_sucesso, sql_query) ou (False, mensagem_erro, None).
     """
     conn = db_connection.get_connection()
     if conn is None:
-        return (False, "Falha na conexão com o banco de dados.")
+        return (False, "Falha na conexão com o banco de dados.", None)
+        
+    sql_query = f"DELETE FROM Canal WHERE num_canal = {num_canal}"
+
     try:
         cursor = conn.cursor()
         cursor.execute("DELETE FROM Canal WHERE num_canal = %s", (num_canal,))
         conn.commit()
         if cursor.rowcount == 0:
-            return (False, "Nenhum canal encontrado com o número fornecido.")
-        return (True, f"Canal #{num_canal} removido com sucesso.")
+            return (False, "Nenhum canal encontrado com o número fornecido.", None)
+        return (True, f"Canal #{num_canal} removido com sucesso.", sql_query)
     except mysql.connector.Error as e:
         conn.rollback()
         if e.errno == 1451:
-          
-            return (False, "Não é possível remover este canal pois há exibições associadas a ele.")
+            return (False, "Não é possível remover este canal pois há exibições associadas a ele.", None)
         else:
-            return (False, f"Erro ao remover canal: {e.msg}")
+            return (False, f"Erro ao remover canal: {e.msg}", None)
     finally:
         conn.close()

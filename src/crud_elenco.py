@@ -6,49 +6,53 @@ import db_connection
 
 def adicionar_elenco(num_filme: int, nome_ator: str, protagonista: bool):
     """
-    Insere um novo registro de elenco (ator em um filme).
-    Retorna (True, mensagem_sucesso) ou (False, mensagem_erro).
+    Insere um novo ator ao elenco de um filme na tabela Elenco.
+    Retorna (True, mensagem_sucesso, sql_query) ou (False, mensagem_erro, None).
     """
     conn = db_connection.get_connection()
     if conn is None:
-        return (False, "Falha na conexão com o banco de dados.")
+        return (False, "Falha na conexão com o banco de dados.", None)
+    
+    protagonista_sql = 1 if protagonista else 0
+    sql_query = f"INSERT INTO Elenco (num_filme, nome_ator, protagonista) VALUES ({num_filme}, '{nome_ator}', {protagonista_sql})"
+    
     try:
         cursor = conn.cursor()
-    
-        protagonista_bit = 1 if protagonista else 0
         cursor.execute(
             "INSERT INTO Elenco (num_filme, nome_ator, protagonista) VALUES (%s, %s, %s)",
-            (num_filme, nome_ator, protagonista_bit)
+            (num_filme, nome_ator, protagonista)
         )
         conn.commit()
-        return (True, f"Ator/atriz '{nome_ator}' adicionado(a) ao filme #{num_filme}.")
+        return (True, f"Ator '{nome_ator}' adicionado ao filme #{num_filme} com sucesso.", sql_query)
     except mysql.connector.Error as e:
         conn.rollback()
-        if e.errno == 1062:
-            return (False, "Erro: Este ator/atriz já está cadastrado(a) neste filme.")
-        elif e.errno == 1452:
-            return (False, "Erro: Filme associado não encontrado.")
+        if e.errno == 1062: # Duplicate entry for primary key
+            return (False, "Erro: Este ator já faz parte do elenco deste filme.", None)
+        elif e.errno == 1452: # Foreign key constraint fails
+            return (False, "Erro: O filme especificado não existe.", None)
         else:
-            return (False, f"Erro ao adicionar elenco: {e.msg}")
+            return (False, f"Erro ao adicionar elenco: {e.msg}", None)
     finally:
         conn.close()
 
 def listar_elenco():
     """
-    Retorna todos os registros de elenco, incluindo nome do filme.
-    Em caso de sucesso, retorna (True, lista_elenco),
-    onde cada item é um dicionário com num_filme, filme_nome, nome_ator, protagonista.
+    Retorna todos os registros de elenco cadastrados.
+    Em caso de sucesso, retorna (True, lista_de_elenco),
+    onde cada item é um dicionário com campos num_filme, nome_ator, protagonista.
+    Em caso de erro, retorna (False, mensagem_de_erro).
     """
     conn = db_connection.get_connection()
     if conn is None:
         return (False, "Falha na conexão com o banco de dados.")
     try:
         cursor = conn.cursor(dictionary=True)
-       
-        cursor.execute(
-            "SELECT e.num_filme, f.nome AS filme_nome, e.nome_ator, e.protagonista "
-            "FROM Elenco e JOIN Filme f ON e.num_filme = f.num_filme"
-        )
+        cursor.execute("""
+            SELECT E.num_filme, F.nome AS nome_filme, E.nome_ator, E.protagonista
+            FROM Elenco E
+            JOIN Filme F ON E.num_filme = F.num_filme
+            ORDER BY F.nome, E.protagonista DESC, E.nome_ator
+        """)
         resultados = cursor.fetchall()
         return (True, resultados)
     except mysql.connector.Error as e:
@@ -56,51 +60,54 @@ def listar_elenco():
     finally:
         conn.close()
 
-def atualizar_elenco(num_filme: int, nome_ator: str, protagonista: bool):
+def atualizar_elenco(num_filme: int, nome_ator: str, novo_protagonista: bool):
     """
-    Atualiza o status de protagonista de um ator em determinado filme.
-    Retorna (True, mensagem_sucesso) ou (False, mensagem_erro).
+    Atualiza o status de protagonista de um ator no elenco de um filme.
+    Retorna (True, mensagem_sucesso, sql_query) ou (False, mensagem_erro, None).
     """
     conn = db_connection.get_connection()
     if conn is None:
-        return (False, "Falha na conexão com o banco de dados.")
+        return (False, "Falha na conexão com o banco de dados.", None)
+
+    novo_protagonista_sql = 1 if novo_protagonista else 0
+    sql_query = f"UPDATE Elenco SET protagonista = {novo_protagonista_sql} WHERE num_filme = {num_filme} AND nome_ator = '{nome_ator}'"
+
     try:
         cursor = conn.cursor()
-        protagonista_bit = 1 if protagonista else 0
         cursor.execute(
             "UPDATE Elenco SET protagonista = %s WHERE num_filme = %s AND nome_ator = %s",
-            (protagonista_bit, num_filme, nome_ator)
+            (novo_protagonista, num_filme, nome_ator)
         )
         conn.commit()
         if cursor.rowcount == 0:
-            return (False, "Nenhum registro de elenco encontrado para atualizar.")
-        return (True, f"Registro de elenco atualizado (Filme #{num_filme}, Ator '{nome_ator}').")
+            return (False, "Nenhum registro de elenco encontrado com os dados fornecidos.", None)
+        return (True, f"Status de protagonista de '{nome_ator}' no filme #{num_filme} atualizado com sucesso.", sql_query)
     except mysql.connector.Error as e:
         conn.rollback()
-        return (False, f"Erro ao atualizar elenco: {e.msg}")
+        return (False, f"Erro ao atualizar elenco: {e.msg}", None)
     finally:
         conn.close()
 
 def remover_elenco(num_filme: int, nome_ator: str):
     """
-    Remove um ator do elenco de um filme.
-    Retorna (True, mensagem_sucesso) ou (False, mensagem_erro).
+    Remove um ator do elenco de um filme da tabela Elenco.
+    Retorna (True, mensagem_sucesso, sql_query) ou (False, mensagem_erro, None).
     """
     conn = db_connection.get_connection()
     if conn is None:
-        return (False, "Falha na conexão com o banco de dados.")
+        return (False, "Falha na conexão com o banco de dados.", None)
+        
+    sql_query = f"DELETE FROM Elenco WHERE num_filme = {num_filme} AND nome_ator = '{nome_ator}'"
+
     try:
         cursor = conn.cursor()
-        cursor.execute(
-            "DELETE FROM Elenco WHERE num_filme = %s AND nome_ator = %s",
-            (num_filme, nome_ator)
-        )
+        cursor.execute("DELETE FROM Elenco WHERE num_filme = %s AND nome_ator = %s", (num_filme, nome_ator))
         conn.commit()
         if cursor.rowcount == 0:
-            return (False, "Nenhum registro de elenco encontrado para remover.")
-        return (True, f"Ator/atriz '{nome_ator}' removido(a) do filme #{num_filme}.")
+            return (False, "Nenhum registro de elenco encontrado com os dados fornecidos.", None)
+        return (True, f"Ator '{nome_ator}' removido do filme #{num_filme} com sucesso.", sql_query)
     except mysql.connector.Error as e:
         conn.rollback()
-        return (False, f"Erro ao remover do elenco: {e.msg}")
+        return (False, f"Erro ao remover elenco: {e.msg}", None)
     finally:
         conn.close()

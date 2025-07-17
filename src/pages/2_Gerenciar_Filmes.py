@@ -21,11 +21,13 @@ if submit_add:
     
     ano_val = int(novo_ano) if int(novo_ano) != 0 else None
     dur_val = int(novo_duracao) if int(novo_duracao) != 0 else None
-    success, msg = crud_filme.adicionar_filme(int(novo_num), novo_nome, ano_val, dur_val)
+    success, msg, sql_query = crud_filme.adicionar_filme(int(novo_num), novo_nome, ano_val, dur_val)
     if success:
         st.success(msg)
     else:
         st.error(msg)
+    if sql_query:
+        st.code(sql_query, language="sql")
 
 st.subheader("Atualizar Filme")
 filme_opcoes = []
@@ -55,11 +57,13 @@ if filme_opcoes:
             if submit_update:
                 ano_val = int(novo_ano_filme) if int(novo_ano_filme) != 0 else None
                 dur_val = int(nova_duracao_filme) if int(nova_duracao_filme) != 0 else None
-                success, msg = crud_filme.atualizar_filme(_selected_filme_id, novo_nome_filme, ano_val, dur_val)
+                success, msg, sql_query = crud_filme.atualizar_filme(_selected_filme_id, novo_nome_filme, ano_val, dur_val)
                 if success:
                     st.success(msg)
                 else:
                     st.error(msg)
+                if sql_query:
+                    st.code(sql_query, language="sql")
 else:
     st.info("Nenhum filme cadastrado para atualizar.")
 
@@ -70,11 +74,13 @@ if filme_opcoes:
         submit_del = st.form_submit_button("Remover")
     if submit_del:
         filme_id = int(escolha_del.split(" - ")[0])
-        success, msg = crud_filme.remover_filme(filme_id)
+        success, msg, sql_query = crud_filme.remover_filme(filme_id)
         if success:
             st.success(msg)
         else:
             st.error(msg)
+        if sql_query:
+            st.code(sql_query, language="sql")
 else:
     st.info("Nenhum filme cadastrado para remover.")
 

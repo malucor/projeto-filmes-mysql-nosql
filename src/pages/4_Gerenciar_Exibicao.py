@@ -1,111 +1,172 @@
 import streamlit as st
 import pandas as pd
-import datetime
 import sys, os
+from datetime import date, time, datetime, timedelta
 
-# Permite importar módulos da pasta pai (crud_*).
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir)))
-import crud_exibicao, crud_filme, crud_canal
+import crud_exibicao
+import crud_filme
+import crud_canal
+
+st.title("🗓️ Gerenciar Exibição")
+st.markdown("Nesta seção, é possível **agendar**, **editar** ou **remover** exibições de filmes nos canais.")
+
+tabela_placeholder = st.empty()
 
 
-st.title("📅 Gerenciar Exibições")
-tabela_placeholder = st.empty()  
-
+st.subheader("Agendar Nova Exibição")
+# Obter lista de filmes e canais para seleção
 filmes_ok, filmes = crud_filme.listar_filmes()
 canais_ok, canais = crud_canal.listar_canais()
 
-filme_opts = [f"{f['num_filme']} - {f['nome']}" for f in filmes] if filmes_ok else []
-canal_opts = [f"{c['num_canal']} - {c['nome']}" for c in canais] if canais_ok else []
+filme_opcoes = ["Selecione um filme"]
+filme_map = {}
+if filmes_ok and filmes:
+    for f in filmes:
+        filme_opcoes.append(f"{f['num_filme']} - {f['nome']}")
+        filme_map[f"{f['num_filme']} - {f['nome']}"] = f['num_filme']
 
-st.subheader("Agendar Exibição")
-if not filme_opts or not canal_opts:
-    st.info("Cadastre pelo menos **um filme** e **um canal** antes de agendar exibições.")
-else:
-    with st.form("form_add"):
-        filme_sel = st.selectbox("Filme", filme_opts)
-        canal_sel = st.selectbox("Canal", canal_opts)
-        data_sel  = st.date_input("Data", value=datetime.date.today())
-        hora_sel  = st.time_input("Hora", value=datetime.time(0, 0))
-        if st.form_submit_button("Agendar"):
-            film_id  = int(filme_sel.split(" - ")[0])
-            canal_id = int(canal_sel.split(" - ")[0])
-            ok, msg  = crud_exibicao.adicionar_exibicao(
-                film_id,
-                canal_id,
-                data_sel.strftime("%Y-%m-%d"),
-                hora_sel.strftime("%H:%M:%S")
-            )
-            if ok:
-                st.success(msg)
-            else:
-                st.error(msg)
+canal_opcoes = ["Selecione um canal"]
+canal_map = {}
+if canais_ok and canais:
+    for c in canais:
+        canal_opcoes.append(f"{c['num_canal']} - {c['nome']}")
+        canal_map[f"{c['num_canal']} - {c['nome']}"] = c['num_canal']
 
-ok_exib, exibicoes = crud_exibicao.listar_exibicoes()
-exib_opts = [
-    f"{e['num_filme']}|{e['num_canal']}|{e['data_exibicao']}|{e['hora_exibicao']} - "
-    f"{e['filme_nome']} • {e['data_exibicao']} {e['hora_exibicao']} • Canal {e['canal_nome']}"
-    for e in exibicoes
-] if ok_exib else []
+if not (filmes_ok and filmes and canais_ok and canais):
+    st.warning("É necessário ter filmes e canais cadastrados para agendar exibições.")
+
+with st.form(key="form_adicionar_exibicao"):
+    filme_selecionado_str = st.selectbox("Filme:", options=filme_opcoes, key="add_filme_select")
+    canal_selecionado_str = st.selectbox("Canal:", options=canal_opcoes, key="add_canal_select")
+    data_exibicao = st.date_input("Data da exibição", date.today())
+    hora_exibicao = st.time_input("Hora da exibição", time(12, 0))
+    submit_add = st.form_submit_button("Agendar Exibição")
+
+if submit_add:
+    if filme_selecionado_str == "Selecione um filme" or canal_selecionado_str == "Selecione um canal":
+        st.error("Por favor, selecione um filme e um canal.")
+    else:
+        num_filme = filme_map[filme_selecionado_str]
+        num_canal = canal_map[canal_selecionado_str]
+        success, msg, sql_query = crud_exibicao.adicionar_exibicao(num_filme, num_canal, data_exibicao, hora_exibicao)
+        if success:
+            st.success(msg)
+        else:
+            st.error(msg)
+        if sql_query:
+            st.code(sql_query, language="sql")
 
 
 st.subheader("Atualizar Exibição")
-if not exib_opts:
-    st.info("Nenhuma exibição cadastrada para atualizar.")
+exibicoes_ok, exibicoes_data = crud_exibicao.listar_exibicoes()
+
+exibicao_opcoes = ["Selecione uma exibição para atualizar"]
+exibicao_map = {}
+
+if exibicoes_ok and exibicoes_data:
+    for e in exibicoes_data:
+        if isinstance(e['hora_exibicao'], timedelta):
+            total_seconds = int(e['hora_exibicao'].total_seconds())
+            hours, remainder = divmod(total_seconds, 3600)
+            minutes, seconds = divmod(remainder, 60)
+            display_time = time(hours, minutes, seconds)
+        else:
+            display_time = e['hora_exibicao']
+        opcao = f"{e['nome_filme']} ({e['nome_canal']}) - {e['data_exibicao'].strftime('%d/%m/%Y')} {display_time.strftime('%H:%M')}"
+        exibicao_opcoes.append(opcao)
+        exibicao_map[opcao] = {
+            'num_filme': e['num_filme'],
+            'num_canal': e['num_canal'],
+            'data_exibicao': e['data_exibicao'],
+            'hora_exibicao': e['hora_exibicao']
+        }
 else:
-    with st.form("form_update"):
-        escolha = st.selectbox("Selecione a exibição", exib_opts)
-     
-        old_film, old_canal, old_data, old_hora = escolha.split(" - ")[0].split("|")
-        old_date_dt = datetime.datetime.strptime(old_data, "%Y-%m-%d").date()
-        old_time_dt = datetime.datetime.strptime(old_hora, "%H:%M:%S").time()
+    st.info("Nenhuma exibição cadastrada para atualizar.")
 
- 
-        filme_novo = st.selectbox(
-            "Novo Filme", filme_opts,
-            index=[i for i, o in enumerate(filme_opts) if o.startswith(f"{old_film} ")][0]
-        )
-        canal_novo = st.selectbox(
-            "Novo Canal", canal_opts,
-            index=[i for i, o in enumerate(canal_opts) if o.startswith(f"{old_canal} ")][0]
-        )
-        data_nova = st.date_input("Nova Data", value=old_date_dt)
-        hora_nova = st.time_input("Nova Hora", value=old_time_dt)
+if exibicao_opcoes and len(exibicao_opcoes) > 1:
+    escolha_exibicao_update = st.selectbox("Selecione a exibição:", options=exibicao_opcoes, key="update_exib_select")
 
-        if st.form_submit_button("Atualizar"):
-            ok_upd, msg_upd = crud_exibicao.atualizar_exibicao(
-                int(old_film), int(old_canal), old_data, old_hora,
-                int(filme_novo.split(" - ")[0]),
-                int(canal_novo.split(" - ")[0]),
-                data_nova.strftime("%Y-%m-%d"),
-                hora_nova.strftime("%H:%M:%S")
+    if escolha_exibicao_update != "Selecione uma exibição para atualizar":
+        selected_data = exibicao_map[escolha_exibicao_update]
+        
+        current_hora_input_value = selected_data['hora_exibicao']
+        if isinstance(current_hora_input_value, timedelta):
+            total_seconds = int(current_hora_input_value.total_seconds())
+            hours, remainder = divmod(total_seconds, 3600)
+            minutes, seconds = divmod(remainder, 60)
+            current_hora_input_value = time(hours, minutes, seconds)
+
+        with st.form(key="form_atualizar_exibicao"):
+            st.write(f"Atualizando exibição de **{escolha_exibicao_update.split(')')[0]})**")
+            nova_data = st.date_input("Nova Data", value=selected_data['data_exibicao'])
+            nova_hora = st.time_input("Nova Hora", value=current_hora_input_value)
+            submit_update = st.form_submit_button("Atualizar")
+        
+        if submit_update:
+            success, msg, sql_query = crud_exibicao.atualizar_exibicao(
+                selected_data['num_filme'],
+                selected_data['num_canal'],
+                selected_data['data_exibicao'],
+                selected_data['hora_exibicao'],
+                nova_data,
+                nova_hora
             )
-            if ok_upd:
-                st.success(msg_upd)
+            if success:
+                st.success(msg)
             else:
-                st.error(msg_upd)
+                st.error(msg)
+            if sql_query:
+                st.code(sql_query, language="sql")
+else:
+    if exibicoes_ok and not exibicoes_data:
+        st.info("Nenhuma exibição cadastrada para atualizar.")
+    elif not exibicoes_ok:
+        st.error(exibicoes_data)
 
 
 st.subheader("Remover Exibição")
-if not exib_opts:
-    st.info("Nenhuma exibição cadastrada para remover.")
-else:
-    with st.form("form_delete"):
-        escolha_del = st.selectbox("Selecione a exibição", exib_opts, key="del")
-        if st.form_submit_button("Remover"):
-            film_del, canal_del, data_del, hora_del = escolha_del.split(" - ")[0].split("|")
-            ok_del, msg_del = crud_exibicao.remover_exibicao(
-                int(film_del), int(canal_del), data_del, hora_del
+if exibicao_opcoes and len(exibicao_opcoes) > 1:
+    with st.form(key="form_remover_exibicao"):
+        escolha_exibicao_del = st.selectbox("Selecione a exibição para remover:", options=exibicao_opcoes, key="del_exib_select")
+        submit_del = st.form_submit_button("Remover")
+    
+    if submit_del:
+        if escolha_exibicao_del == "Selecione uma exibição para remover":
+            st.error("Por favor, selecione uma exibição para remover.")
+        else:
+            selected_data = exibicao_map[escolha_exibicao_del]
+            success, msg, sql_query = crud_exibicao.remover_exibicao(
+                selected_data['num_filme'],
+                selected_data['num_canal'],
+                selected_data['data_exibicao'],
+                selected_data['hora_exibicao']
             )
-            if ok_del:
-                st.success(msg_del)
+            if success:
+                st.success(msg)
             else:
-                st.error(msg_del)
-
-if ok_exib and len(exibicoes) > 0:
-    df = pd.DataFrame(exibicoes)
-    df.columns = ["FilmeID", "Filme", "CanalID", "Canal", "Data", "Hora"]
-    tabela_placeholder.dataframe(df, use_container_width=True)
-elif ok_exib:
-    tabela_placeholder.info("Nenhuma exibição cadastrada no momento.")
+                st.error(msg)
+            if sql_query:
+                st.code(sql_query, language="sql")
 else:
-    tabela_placeholder.error(exibicoes)  
+    if exibicoes_ok and not exibicoes_data:
+        st.info("Nenhuma exibição cadastrada para remover.")
+    elif not exibicoes_ok:
+        st.error(exibicoes_data)
+
+
+# Exibir tabela de exibições
+exibicoes_ok, exibicoes_data_table = crud_exibicao.listar_exibicoes()
+if exibicoes_ok:
+    for row in exibicoes_data_table:
+        if isinstance(row['hora_exibicao'], timedelta):
+            total_seconds = int(row['hora_exibicao'].total_seconds())
+            hours, remainder = divmod(total_seconds, 3600)
+            minutes, seconds = divmod(remainder, 60)
+            row['hora_exibicao'] = time(hours, minutes, seconds)
+            
+    df = pd.DataFrame(exibicoes_data_table)
+    df.columns = ["Cód. Filme", "Filme", "Cód. Canal", "Canal", "Data", "Hora"]
+    tabela_placeholder.dataframe(df, use_container_width=True)
+else:
+    tabela_placeholder.error(exibicoes_data_table)
