@@ -26,7 +26,7 @@ else:
 
 
 with st.form(key="form_adicionar_elenco"):
-    filme_selecionado_str = st.selectbox("Filme:", options=filme_opcoes)
+    filme_selecionado_str = st.selectbox("Filme:", options=filme_opcoes, key="add_filme_select")
     nome_ator = st.text_input("Nome do ator/atriz")
     protagonista = st.checkbox("É protagonista?")
     submit_add = st.form_submit_button("Adicionar")
@@ -54,7 +54,8 @@ if elenco_ok and elenco_atual:
     for e in elenco_atual:
         opcao = f"{e['nome_filme']} - {e['nome_ator']}"
         elenco_opcoes.append(opcao)
-        elenco_map[opcao] = {'num_filme': e['num_filme'], 'nome_ator': e['nome_ator'], 'protagonista': e['protagonista']}
+        # CORREÇÃO AQUI: Adiciona 'nome_filme' ao dicionário
+        elenco_map[opcao] = {'num_filme': e['num_filme'], 'nome_ator': e['nome_ator'], 'protagonista': e['protagonista'], 'nome_filme': e['nome_filme']}
 else:
     st.info("Nenhum elenco cadastrado para atualizar.")
 
@@ -65,9 +66,9 @@ if elenco_opcoes and len(elenco_opcoes) > 1: # Verifica se há opções além do
         selected_data = elenco_map[escolha_elenco_update]
         current_protagonista_status = selected_data['protagonista']
         
-        with st.form(key="form_atualizar_elenco"):
+        with st.form(key="form_atualizar_protagonista"): # Renomeado o key para ser mais específico
             novo_protagonista_status = st.checkbox("É protagonista?", value=current_protagonista_status)
-            submit_update = st.form_submit_button("Atualizar")
+            submit_update = st.form_submit_button("Atualizar Status") # Renomeado o botão
         
         if submit_update:
             success, msg, sql_query = crud_elenco.atualizar_elenco(selected_data['num_filme'], selected_data['nome_ator'], novo_protagonista_status)
@@ -82,6 +83,35 @@ else:
         st.info("Nenhum elenco cadastrado para atualizar.")
     elif not elenco_ok: # Se houve erro ao listar
         st.error(elenco_atual) # elenco_atual contém a mensagem de erro neste caso
+
+
+st.subheader("Atualizar Nome do Ator")
+if elenco_opcoes and len(elenco_opcoes) > 1:
+    escolha_elenco_nome_update = st.selectbox("Selecione o ator para mudar o nome:", options=elenco_opcoes, key="update_actor_name_select")
+
+    if escolha_elenco_nome_update != "Selecione um ator/filme":
+        selected_data_name_update = elenco_map[escolha_elenco_nome_update]
+        current_actor_name = selected_data_name_update['nome_ator']
+
+        with st.form(key="form_atualizar_nome_ator"):
+            st.write(f"Filme: **{selected_data_name_update['nome_filme']}** (Ator atual: **{current_actor_name}**)")
+            novo_nome = st.text_input("Novo nome do ator/atriz", value=current_actor_name)
+            submit_name_update = st.form_submit_button("Atualizar Nome")
+        
+        if submit_name_update:
+            success, msg, sql_query = crud_elenco.atualizar_nome_ator(
+                selected_data_name_update['num_filme'],
+                current_actor_name, # Nome antigo para identificar
+                novo_nome
+            )
+            if success:
+                st.success(msg)
+            else:
+                st.error(msg)
+            if sql_query:
+                st.code(sql_query, language="sql")
+else:
+    st.info("Nenhum elenco cadastrado para atualizar nomes de atores.")
 
 
 st.subheader("Remover Ator do Elenco")

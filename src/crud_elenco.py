@@ -39,7 +39,7 @@ def listar_elenco():
     """
     Retorna todos os registros de elenco cadastrados.
     Em caso de sucesso, retorna (True, lista_de_elenco),
-    onde cada item é um dicionário com campos num_filme, nome_ator, protagonista.
+    onde cada item é um dicionário com campos num_filme, nome_filme, nome_ator, protagonista.
     Em caso de erro, retorna (False, mensagem_de_erro).
     """
     conn = db_connection.get_connection()
@@ -87,6 +87,37 @@ def atualizar_elenco(num_filme: int, nome_ator: str, novo_protagonista: bool):
         return (False, f"Erro ao atualizar elenco: {e.msg}", None)
     finally:
         conn.close()
+
+def atualizar_nome_ator(num_filme: int, nome_ator_antigo: str, novo_nome_ator: str):
+    """
+    Atualiza o nome de um ator no elenco de um filme.
+    Retorna (True, mensagem_sucesso, sql_query) ou (False, mensagem_erro, None).
+    """
+    conn = db_connection.get_connection()
+    if conn is None:
+        return (False, "Falha na conexão com o banco de dados.", None)
+
+    sql_query = f"UPDATE Elenco SET nome_ator = '{novo_nome_ator}' WHERE num_filme = {num_filme} AND nome_ator = '{nome_ator_antigo}'"
+
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            "UPDATE Elenco SET nome_ator = %s WHERE num_filme = %s AND nome_ator = %s",
+            (novo_nome_ator, num_filme, nome_ator_antigo)
+        )
+        conn.commit()
+        if cursor.rowcount == 0:
+            return (False, "Nenhum registro de elenco encontrado com o filme e nome de ator fornecidos.", None)
+        return (True, f"Nome do ator '{nome_ator_antigo}' no filme #{num_filme} atualizado para '{novo_nome_ator}' com sucesso.", sql_query)
+    except mysql.connector.Error as e:
+        conn.rollback()
+        if e.errno == 1062: # Duplicate entry for primary key (num_filme, novo_nome_ator)
+            return (False, f"Erro: O nome '{novo_nome_ator}' já existe para um ator neste filme.", None)
+        else:
+            return (False, f"Erro ao atualizar nome do ator: {e.msg}", None)
+    finally:
+        conn.close()
+
 
 def remover_elenco(num_filme: int, nome_ator: str):
     """
