@@ -1,3 +1,4 @@
+import os
 import streamlit as st
 
 # Configuração da página
@@ -14,3 +15,16 @@ Use a **barra lateral** para navegar entre as seções:
 - **Gerenciar Exibição:** agende filmes nos canais (datas e horários) e gerencie a programação.
 - **Dashboard:** visualize queries e insights da programação.
 """)
+
+st.markdown("---")
+
+st.subheader("Diagrama Entidade-Relacionamento (DER)")
+
+image_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'diagrama_der.png')
+
+if os.path.exists(image_path):
+    st.image(image_path, caption="Melhor compreensão das tabelas e dos seus relacionamentos", use_container_width=False, width=500)
+else:
+    st.error(f"Erro: Imagem do DER não encontrada em: {image_path}. Certifique-se de que 'diagrama_der.png' está na pasta raiz do projeto.")
+
+st.markdown("---")

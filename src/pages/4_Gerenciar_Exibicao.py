@@ -181,7 +181,7 @@ if st.button("Demonstrar Violação: Canal Inexistente", key="btn_violacao_canal
         filme_para_violacao = filmes[0]['num_filme']
         success, msg, sql_query = crud_exibicao.adicionar_exibicao(
             filme_para_violacao,
-            777,
+            70,
             date.today(),
             time(10, 0, 0)
         )
