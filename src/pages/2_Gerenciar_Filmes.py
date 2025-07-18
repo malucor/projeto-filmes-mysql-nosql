@@ -1,3 +1,4 @@
+from datetime import date
 import streamlit as st
 import pandas as pd
 import sys, os
@@ -91,3 +92,21 @@ if filmes_ok:
     tabela_placeholder.dataframe(df, use_container_width=True)
 else:
     tabela_placeholder.error(filmes_data)
+
+st.markdown("---")
+st.subheader("Demonstrar Violação de Trigger (Ano de Lançamento)")
+if st.button("Demonstrar Violação: Ano Futuro para Filme", key="btn_violacao_trigger_filme"):
+    ano_futuro = date.today().year + 1
+    
+    success, msg, sql_query_violacao = crud_filme.adicionar_filme(
+        99999,
+        "Filme do Futuro",
+        ano_futuro,
+        120
+    )
+    if success:
+        st.success(msg)
+    else:
+        st.error(f"Violação de Trigger Demonstrada: {msg}")
+        if sql_query_violacao:
+            st.code(sql_query_violacao, language="sql")

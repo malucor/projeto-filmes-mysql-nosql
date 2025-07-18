@@ -31,7 +31,7 @@ def adicionar_filme(num_filme: int, nome: str, ano: int = None, duracao: int = N
         if e.errno == 1062:
             return (False, "Erro: Já existe um filme com esse código (num_filme) cadastrado.", None)
         else:
-            return (False, f"Erro ao adicionar filme: {e.msg}", None)
+            return (False, f"Erro ao adicionar filme: {e.msg}", sql_query)
     finally:
         conn.close()
 
@@ -81,7 +81,7 @@ def atualizar_filme(num_filme: int, novo_nome: str, novo_ano: int = None, nova_d
         return (True, f"Filme #{num_filme} atualizado com sucesso.", sql_query)
     except mysql.connector.Error as e:
         conn.rollback()
-        return (False, f"Erro ao atualizar filme: {e.msg}", None)
+        return (False, f"Erro ao atualizar filme: {e.msg}", sql_query)
     finally:
         conn.close()
 
@@ -108,7 +108,7 @@ def remover_filme(num_filme: int):
         if e.errno == 1451:
             return (False, "Não é possível remover este filme pois há outros registros associados a ele (Elenco ou Exibição).", None)
         else:
-            return (False, f"Erro ao remover filme: {e.msg}", None)
+            return (False, f"Erro ao remover filme: {e.msg}", sql_query)
     finally:
         conn.close()
 

@@ -181,6 +181,18 @@ INSERT INTO Elenco VALUES
 -- Aplicando a restrição de integridade referencial (chaves estrangeiras - FK)
 ALTER TABLE Exibicao	ADD FOREIGN KEY(num_filme) REFERENCES Filme(num_filme) ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE Exibicao	ADD FOREIGN KEY(num_canal) REFERENCES Canal(num_canal) ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE Elenco	ADD FOREIGN KEY(num_filme) REFERENCES Filme(num_filme) ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE Elenco		ADD FOREIGN KEY(num_filme) REFERENCES Filme(num_filme) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- Aplicando o trigger para evitar que filmes que não foram lançados não possam ser inderidos
+DELIMITER //
+
+CREATE TRIGGER before_insert_filme_check_ano
+BEFORE INSERT ON Filme
+FOR EACH ROW
+BEGIN
+    IF NEW.ano > YEAR(CURDATE()) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Não é permitido adicionar filmes com ano de lançamento futuro.';
+    END IF;
+END //
 
 COMMIT;
