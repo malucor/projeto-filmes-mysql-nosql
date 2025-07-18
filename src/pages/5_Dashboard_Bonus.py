@@ -19,7 +19,7 @@ if 'show_query_media_duracao' not in st.session_state:
     st.session_state.show_query_media_duracao = False
 if 'show_query_filmes_sem_exibicao' not in st.session_state:
     st.session_state.show_query_filmes_sem_exibicao = False
-if 'show_query_filmes_sem_elenco' not in st.session_state: # NOVA
+if 'show_query_filmes_sem_elenco' not in st.session_state:
     st.session_state.show_query_filmes_sem_elenco = False
 if 'show_query_filmes_futuros' not in st.session_state:
     st.session_state.show_query_filmes_futuros = False
@@ -61,6 +61,11 @@ if ok_canal:
             st.markdown("```sql\n" + query_canal + "\n```")
     else:
         st.info("Nenhuma exibição encontrada para gerar o dashboard de canais.")
+        if st.button("Visualizar Query", key="btn_query_canal"):
+            st.session_state.show_query_canal = not st.session_state.show_query_canal
+        
+        if st.session_state.show_query_canal:
+            st.markdown("```sql\n" + query_canal + "\n```")
 else:
     st.error(resultado_canal)
 
@@ -91,6 +96,11 @@ if ok_hora:
             st.markdown("```sql\n" + query_hora + "\n```")
     else:
         st.info("Nenhuma exibição encontrada para gerar o dashboard de horários.")
+        if st.button("Visualizar Query", key="btn_query_hora"):
+            st.session_state.show_query_hora = not st.session_state.show_query_hora
+
+        if st.session_state.show_query_hora:
+            st.markdown("```sql\n" + query_hora + "\n```")
 else:
     st.error(resultado_hora)
 
@@ -121,6 +131,11 @@ if ok_dia_semana:
             st.markdown("```sql\n" + query_dia_semana + "\n```")
     else:
         st.info("Nenhuma exibição encontrada para gerar o dashboard de dias da semana.")
+        if st.button("Visualizar Query", key="btn_query_dia_semana"):
+            st.session_state.show_query_dia_semana = not st.session_state.show_query_dia_semana
+        
+        if st.session_state.show_query_dia_semana:
+            st.markdown("```sql\n" + query_dia_semana + "\n```")
 else:
     st.error(resultado_dia_semana)
 
@@ -149,6 +164,11 @@ if ok_media_duracao:
             st.markdown("```sql\n" + query_media_duracao + "\n```")
     else:
         st.info("Nenhum dado de duração de filme encontrado para gerar o dashboard de média de duração.")
+        if st.button("Visualizar Query", key="btn_query_media_duracao"):
+            st.session_state.show_query_media_duracao = not st.session_state.show_query_media_duracao
+        
+        if st.session_state.show_query_media_duracao:
+            st.markdown("```sql\n" + query_media_duracao + "\n```")
 else:
     st.error(resultado_media_duracao)
 
@@ -174,6 +194,11 @@ if ok_filmes_sem_exibicao:
             st.markdown("```sql\n" + query_filmes_sem_exibicao + "\n```")
     else:
         st.info("Todos os filmes possuem exibições agendadas ou nenhum filme cadastrado.")
+        if st.button("Visualizar Query", key="btn_query_filmes_sem_exibicao"):
+            st.session_state.show_query_filmes_sem_exibicao = not st.session_state.show_query_filmes_sem_exibicao
+        
+        if st.session_state.show_query_filmes_sem_exibicao:
+            st.markdown("```sql\n" + query_filmes_sem_exibicao + "\n```")
 else:
     st.error(resultado_filmes_sem_exibicao)
 
@@ -199,6 +224,11 @@ if ok_filmes_sem_elenco:
             st.markdown("```sql\n" + query_filmes_sem_elenco + "\n```")
     else:
         st.info("Todos os filmes possuem elenco cadastrado ou nenhum filme encontrado.")
+        if st.button("Visualizar Query", key="btn_query_filmes_sem_elenco"):
+            st.session_state.show_query_filmes_sem_elenco = not st.session_state.show_query_filmes_sem_elenco
+        
+        if st.session_state.show_query_filmes_sem_elenco:
+            st.markdown("```sql\n" + query_filmes_sem_elenco + "\n```")
 else:
     st.error(resultado_filmes_sem_elenco)
 
@@ -234,6 +264,11 @@ if ok_filmes_futuros:
             st.markdown("```sql\n" + query_filmes_futuros + "\n```")
     else:
         st.info("Nenhuma exibição futura encontrada.")
+        if st.button("Visualizar Query", key="btn_query_filmes_futuros"):
+            st.session_state.show_query_filmes_futuros = not st.session_state.show_query_filmes_futuros
+        
+        if st.session_state.show_query_filmes_futuros:
+            st.markdown("```sql\n" + query_filmes_futuros + "\n```")
 else:
     st.error(resultado_filmes_futuros)
 
@@ -263,6 +298,11 @@ if ok_multi_ator:
             st.markdown("```sql\n" + query_multi_ator + "\n```")
     else:
         st.info("Nenhum ator encontrado em múltiplos filmes nos dados atuais.")
+        if st.button("Visualizar Query", key="btn_query_multi_ator"):
+            st.session_state.show_query_multi_ator = not st.session_state.show_query_multi_ator
+
+        if st.session_state.show_query_multi_ator:
+            st.markdown("```sql\n" + query_multi_ator + "\n```")
 else:
     st.error(resultado_multi_ator)
 
@@ -289,6 +329,11 @@ if ok_proto_multi_ator:
             st.markdown("```sql\n" + query_proto_multi_ator + "\n```")
     else:
         st.info("Nenhum ator encontrado como protagonista em múltiplos filmes nos dados atuais.")
+        if st.button("Visualizar Query", key="btn_query_proto_multi_ator"):
+            st.session_state.show_query_proto_multi_ator = not st.session_state.show_query_proto_multi_ator
+
+        if st.session_state.show_query_proto_multi_ator:
+            st.markdown("```sql\n" + query_proto_multi_ator + "\n```")
 else:
     st.error(resultado_proto_multi_ator)
 
@@ -314,6 +359,11 @@ if ok_ator_sem_proto:
             st.markdown("```sql\n" + query_ator_sem_proto + "\n```")
     else:
         st.info("Todos os atores são protagonistas em pelo menos um filme ou nenhum ator encontrado sem protagonismo.")
+        if st.button("Visualizar Query", key="btn_query_ator_sem_proto"):
+            st.session_state.show_query_ator_sem_proto = not st.session_state.show_query_ator_sem_proto
+        
+        if st.session_state.show_query_ator_sem_proto:
+            st.markdown("```sql\n" + query_ator_sem_proto + "\n```")
 else:
     st.error(resultado_ator_sem_proto)
 
@@ -346,6 +396,11 @@ if ok_canais_variedade:
             st.markdown("```sql\n" + query_canais_variedade + "\n```")
     else:
         st.info("Nenhum dado de canal ou exibição encontrado para esta análise.")
+        if st.button("Visualizar Query", key="btn_query_canais_variedade"):
+            st.session_state.show_query_canais_variedade = not st.session_state.show_query_canais_variedade
+        
+        if st.session_state.show_query_canais_variedade:
+            st.markdown("```sql\n" + query_canais_variedade + "\n```")
 else:
     st.error(resultado_canais_variedade)
 
@@ -370,5 +425,10 @@ if ok_canais_ociosos:
             st.markdown("```sql\n" + query_canais_ociosos + "\n```")
     else:
         st.info("Todos os canais possuem exibições agendadas nos próximos 30 dias ou nenhum canal cadastrado.")
+        if st.button("Visualizar Query", key="btn_query_canais_ociosos"):
+            st.session_state.show_query_canais_ociosos = not st.session_state.show_query_canais_ociosos
+        
+        if st.session_state.show_query_canais_ociosos:
+            st.markdown("```sql\n" + query_canais_ociosos + "\n```")
 else:
     st.error(resultado_canais_ociosos)

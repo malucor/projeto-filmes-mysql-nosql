@@ -243,7 +243,7 @@ def obter_canais_sem_exibicoes_proximos_30_dias():
             SELECT C.nome AS canal_ocioso
             FROM Canal C
             LEFT JOIN Exibicao E ON C.num_canal = E.num_canal
-                AND E.data_exibicao BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY)
+            AND E.data_exibicao BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY)
             WHERE E.num_canal IS NULL;
         """
         cursor.execute(sql_query)
