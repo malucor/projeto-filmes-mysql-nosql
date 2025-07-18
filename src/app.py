@@ -12,5 +12,5 @@ Use a **barra lateral** para navegar entre as seções:
 - **Gerenciar Filmes:** cadastre filmes, edite informações ou remova filmes do catálogo.
 - **Gerenciar Elenco:** gerencie o elenco dos filmes (atores, atrizes e se são protagonistas).
 - **Gerenciar Exibição:** agende filmes nos canais (datas e horários) e gerencie a programação.
-- **Dashboard (Bônus):** visualize insights da programação, como contagem de exibições por canal.
+- **Dashboard:** visualize queries e insights da programação.
 """)

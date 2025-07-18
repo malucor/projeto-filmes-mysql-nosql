@@ -142,3 +142,93 @@ def remover_elenco(num_filme: int, nome_ator: str):
         return (False, f"Erro ao remover elenco: {e.msg}", None)
     finally:
         conn.close()
+
+def obter_atores_em_multiplos_filmes():
+    """
+    Obtém uma lista de atores que estão em mais de um filme,
+    junto com os nomes dos filmes em que atuam.
+    Retorna (True, lista_de_resultados, sql_query) ou (False, mensagem_de_erro, None).
+    """
+    conn = db_connection.get_connection()
+    if conn is None:
+        return (False, "Falha na conexão com o banco de dados.", None)
+    try:
+        cursor = conn.cursor(dictionary=True)
+        sql_query = """
+            SELECT E.nome_ator, GROUP_CONCAT(F.nome SEPARATOR '; ') AS filmes_participados, COUNT(DISTINCT E.num_filme) AS total_filmes
+            FROM Elenco E
+            JOIN Filme F ON E.num_filme = F.num_filme
+            GROUP BY E.nome_ator
+            HAVING COUNT(DISTINCT E.num_filme) > 1
+            ORDER BY E.nome_ator;
+        """
+        cursor.execute(sql_query)
+        resultados = cursor.fetchall()
+        return (True, resultados, sql_query)
+    except mysql.connector.Error as e:
+        return (False, f"Erro ao obter atores em múltiplos filmes: {e.msg}", None)
+    finally:
+        conn.close()
+
+def obter_protagonistas_em_multiplos_filmes():
+    """
+    Obtém uma lista de atores que são protagonistas em mais de um filme,
+    junto com os nomes dos filmes em que são protagonistas.
+    Retorna (True, lista_de_resultados, sql_query) ou (False, mensagem_de_erro, None).
+    """
+    conn = db_connection.get_connection()
+    if conn is None:
+        return (False, "Falha na conexão com o banco de dados.", None)
+    try:
+        cursor = conn.cursor(dictionary=True)
+        sql_query = """
+            SELECT E.nome_ator, GROUP_CONCAT(F.nome SEPARATOR '; ') AS filmes_protagonizados, COUNT(DISTINCT E.num_filme) AS total_filmes_protagonista
+            FROM Elenco E
+            JOIN Filme F ON E.num_filme = F.num_filme
+            WHERE E.protagonista = TRUE
+            GROUP BY E.nome_ator
+            HAVING COUNT(DISTINCT E.num_filme) > 1
+            ORDER BY E.nome_ator;
+        """
+        cursor.execute(sql_query)
+        resultados = cursor.fetchall()
+        return (True, resultados, sql_query)
+    except mysql.connector.Error as e:
+        return (False, f"Erro ao obter protagonistas em múltiplos filmes: {e.msg}", None)
+    finally:
+        conn.close()
+
+def obter_atores_sem_papeis_protagonista():
+    """
+    Obtém uma lista de atores que nunca foram protagonistas em nenhum filme.
+    Retorna (True, lista_de_resultados, sql_query) ou (False, mensagem_de_erro, None).
+    """
+    conn = db_connection.get_connection()
+    if conn is None:
+        return (False, "Falha na conexão com o banco de dados.", None)
+    try:
+        cursor = conn.cursor(dictionary=True)
+        sql_query = """
+            SELECT
+                E.nome_ator,
+                GROUP_CONCAT(F.nome SEPARATOR '; ') AS filmes_atuados
+            FROM
+                Elenco E
+            JOIN
+                Filme F ON E.num_filme = F.num_filme
+            WHERE
+                E.protagonista = FALSE
+            GROUP BY
+                E.nome_ator
+            HAVING
+                COUNT(DISTINCT E.num_filme) = SUM(CASE WHEN E.protagonista = FALSE THEN 1 ELSE 0 END)
+            ORDER BY
+                E.nome_ator;
+        """
+        cursor.execute(sql_query)
+        resultados = cursor.fetchall()
+        return (True, resultados, sql_query)
+    except mysql.connector.Error as e:
+        return (False, f"Erro ao obter atores sem papéis de protagonista: {e.msg}", None)
+    finally:
+        conn.close()

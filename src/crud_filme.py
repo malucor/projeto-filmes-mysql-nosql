@@ -22,7 +22,7 @@ def adicionar_filme(num_filme: int, nome: str, ano: int = None, duracao: int = N
         cursor = conn.cursor()
         cursor.execute(
             "INSERT INTO Filme (num_filme, nome, ano, duracao) VALUES (%s, %s, %s, %s)",
-            (num_filme, nome, ano_for_db, duracao) # Passa ano_for_db aqui
+            (num_filme, nome, ano_for_db, duracao)
         )
         conn.commit()
         return (True, f"Filme '{nome}' (#{num_filme}) adicionado com sucesso.", sql_query)
@@ -64,7 +64,7 @@ def atualizar_filme(num_filme: int, novo_nome: str, novo_ano: int = None, nova_d
     if conn is None:
         return (False, "Falha na conexão com o banco de dados.", None)
         
-    novo_ano_for_db = novo_ano if novo_ano is not None else 0 # Se for None, usa 0
+    novo_ano_for_db = novo_ano if novo_ano is not None else 0
 
     nova_duracao_str = str(nova_duracao) if nova_duracao is not None else "NULL"
     sql_query = f"UPDATE Filme SET nome = '{novo_nome}', ano = {novo_ano_for_db}, duracao = {nova_duracao_str} WHERE num_filme = {num_filme}"
@@ -109,5 +109,104 @@ def remover_filme(num_filme: int):
             return (False, "Não é possível remover este filme pois há outros registros associados a ele (Elenco ou Exibição).", None)
         else:
             return (False, f"Erro ao remover filme: {e.msg}", None)
+    finally:
+        conn.close()
+
+def obter_media_duracao_filmes_por_ano():
+    """
+    Obtém a duração média dos filmes por ano de lançamento.
+    Retorna (True, lista_de_resultados, sql_query) ou (False, mensagem_de_erro, None).
+    """
+    conn = db_connection.get_connection()
+    if conn is None:
+        return (False, "Falha na conexão com o banco de dados.", None)
+    try:
+        cursor = conn.cursor(dictionary=True)
+        sql_query = """
+            SELECT ano, AVG(duracao) AS media_duracao
+            FROM Filme
+            WHERE duracao IS NOT NULL
+            GROUP BY ano
+            ORDER BY ano;
+        """
+        cursor.execute(sql_query)
+        resultados = cursor.fetchall()
+        return (True, resultados, sql_query)
+    except mysql.connector.Error as e:
+        return (False, f"Erro ao obter média de duração de filmes por ano: {e.msg}", None)
+    finally:
+        conn.close()
+
+def obter_quantidade_filmes_por_ano():
+    """
+    Obtém a quantidade de filmes lançados por ano.
+    Retorna (True, lista_de_resultados, sql_query) ou (False, mensagem_de_erro, None).
+    """
+    conn = db_connection.get_connection()
+    if conn is None:
+        return (False, "Falha na conexão com o banco de dados.", None)
+    try:
+        cursor = conn.cursor(dictionary=True)
+        sql_query = """
+            SELECT ano, COUNT(*) AS total_filmes
+            FROM Filme
+            GROUP BY ano
+            ORDER BY ano;
+        """
+        cursor.execute(sql_query)
+        resultados = cursor.fetchall()
+        return (True, resultados, sql_query)
+    except mysql.connector.Error as e:
+        return (False, f"Erro ao obter quantidade de filmes por ano: {e.msg}", None)
+    finally:
+        conn.close()
+
+def obter_filmes_sem_exibicao():
+    """
+    Obtém uma lista de filmes que não possuem nenhuma exibição agendada.
+    Retorna (True, lista_de_resultados, sql_query) ou (False, mensagem_de_erro, None).
+    """
+    conn = db_connection.get_connection()
+    if conn is None:
+        return (False, "Falha na conexão com o banco de dados.", None)
+    try:
+        cursor = conn.cursor(dictionary=True)
+        sql_query = """
+            SELECT F.nome AS filme_sem_exibicao, F.ano, F.duracao
+            FROM Filme F
+            LEFT JOIN Exibicao E ON F.num_filme = E.num_filme
+            WHERE E.num_filme IS NULL
+            ORDER BY F.nome;
+        """
+        cursor.execute(sql_query)
+        resultados = cursor.fetchall()
+        return (True, resultados, sql_query)
+    except mysql.connector.Error as e:
+        return (False, f"Erro ao obter filmes sem exibição: {e.msg}", None)
+    finally:
+        conn.close()
+
+def obter_filmes_sem_elenco():
+    """
+    Obtém uma lista de filmes que não possuem nenhum ator no elenco.
+    Retorna (True, lista_de_resultados, sql_query) ou (False, mensagem_de_erro, None).
+    """
+    conn = db_connection.get_connection()
+    if conn is None:
+        return (False, "Falha na conexão com o banco de dados.", None)
+    try:
+        cursor = conn.cursor(dictionary=True)
+        sql_query = """
+            SELECT F.nome AS filme_sem_elenco, F.ano, F.duracao
+            FROM Filme F
+            LEFT JOIN Elenco E ON F.num_filme = E.num_filme
+            WHERE E.num_filme IS NULL
+            ORDER BY F.nome;
+        """
+        cursor.execute(sql_query)
+        resultados = cursor.fetchall()
+        return (True, resultados, sql_query)
+    except mysql.connector.Error as e:
+        return (False, f"Erro ao obter filmes sem elenco: {e.msg}", None)
     finally:
         conn.close()
