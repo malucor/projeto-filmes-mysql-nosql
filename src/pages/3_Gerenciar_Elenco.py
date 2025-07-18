@@ -13,7 +13,6 @@ tabela_placeholder = st.empty()
 
 
 st.subheader("Adicionar Ator ao Elenco")
-# Obter lista de filmes para seleção
 filmes_ok, filmes = crud_filme.listar_filmes()
 filme_opcoes = ["Selecione um filme"]
 filme_map = {}
@@ -44,31 +43,32 @@ if submit_add:
         if sql_query:
             st.code(sql_query, language="sql")
 
+st.markdown("---")
+
 
 st.subheader("Atualizar Status de Protagonista")
 elenco_ok, elenco_atual = crud_elenco.listar_elenco()
 elenco_opcoes = ["Selecione um ator/filme"]
-elenco_map = {} # Key: "Filme - Ator", Value: (num_filme, nome_ator)
+elenco_map = {}
 
 if elenco_ok and elenco_atual:
     for e in elenco_atual:
         opcao = f"{e['nome_filme']} - {e['nome_ator']}"
         elenco_opcoes.append(opcao)
-        # CORREÇÃO AQUI: Adiciona 'nome_filme' ao dicionário
         elenco_map[opcao] = {'num_filme': e['num_filme'], 'nome_ator': e['nome_ator'], 'protagonista': e['protagonista'], 'nome_filme': e['nome_filme']}
 else:
     st.info("Nenhum elenco cadastrado para atualizar.")
 
-if elenco_opcoes and len(elenco_opcoes) > 1: # Verifica se há opções além do placeholder
+if elenco_opcoes and len(elenco_opcoes) > 1:
     escolha_elenco_update = st.selectbox("Selecione o registro de elenco para editar:", options=elenco_opcoes, key="update_elenco_select")
     
     if escolha_elenco_update != "Selecione um ator/filme":
         selected_data = elenco_map[escolha_elenco_update]
         current_protagonista_status = selected_data['protagonista']
         
-        with st.form(key="form_atualizar_protagonista"): # Renomeado o key para ser mais específico
+        with st.form(key="form_atualizar_protagonista"):
             novo_protagonista_status = st.checkbox("É protagonista?", value=current_protagonista_status)
-            submit_update = st.form_submit_button("Atualizar Status") # Renomeado o botão
+            submit_update = st.form_submit_button("Atualizar Status")
         
         if submit_update:
             success, msg, sql_query = crud_elenco.atualizar_elenco(selected_data['num_filme'], selected_data['nome_ator'], novo_protagonista_status)
@@ -79,10 +79,10 @@ if elenco_opcoes and len(elenco_opcoes) > 1: # Verifica se há opções além do
             if sql_query:
                 st.code(sql_query, language="sql")
 else:
-    if elenco_ok and not elenco_atual: # Se a lista está vazia
+    if elenco_ok and not elenco_atual:
         st.info("Nenhum elenco cadastrado para atualizar.")
-    elif not elenco_ok: # Se houve erro ao listar
-        st.error(elenco_atual) # elenco_atual contém a mensagem de erro neste caso
+    elif not elenco_ok:
+        st.error(elenco_atual)
 
 
 st.subheader("Atualizar Nome do Ator")
@@ -101,7 +101,7 @@ if elenco_opcoes and len(elenco_opcoes) > 1:
         if submit_name_update:
             success, msg, sql_query = crud_elenco.atualizar_nome_ator(
                 selected_data_name_update['num_filme'],
-                current_actor_name, # Nome antigo para identificar
+                current_actor_name,
                 novo_nome
             )
             if success:
@@ -148,3 +148,18 @@ if elenco_ok:
     tabela_placeholder.dataframe(df, use_container_width=True)
 else:
     tabela_placeholder.error(elenco_data)
+
+st.markdown("---")
+st.subheader("Demonstrar Violação de Integridade Referencial")
+if st.button("Demonstrar Violação: Filme Inexistente para Elenco", key="btn_violacao_filme_elenco"):
+    success, msg, sql_query = crud_elenco.adicionar_elenco(
+        99999,
+        "Ator Inexistente",
+        False
+    )
+    if success:
+        st.success(msg)
+    else:
+        st.error(f"Violação demonstrada: {msg}")
+        if sql_query:
+            st.code(sql_query, language="sql")

@@ -7,7 +7,7 @@ import db_connection
 def adicionar_elenco(num_filme: int, nome_ator: str, protagonista: bool):
     """
     Insere um novo ator ao elenco de um filme na tabela Elenco.
-    Retorna (True, mensagem_sucesso, sql_query) ou (False, mensagem_erro, None).
+    Retorna (True, mensagem_sucesso, sql_query) ou (False, mensagem_erro, sql_query).
     """
     conn = db_connection.get_connection()
     if conn is None:
@@ -26,12 +26,12 @@ def adicionar_elenco(num_filme: int, nome_ator: str, protagonista: bool):
         return (True, f"Ator '{nome_ator}' adicionado ao filme #{num_filme} com sucesso.", sql_query)
     except mysql.connector.Error as e:
         conn.rollback()
-        if e.errno == 1062: # Duplicate entry for primary key
-            return (False, "Erro: Este ator já faz parte do elenco deste filme.", None)
-        elif e.errno == 1452: # Foreign key constraint fails
-            return (False, "Erro: O filme especificado não existe.", None)
-        else:
-            return (False, f"Erro ao adicionar elenco: {e.msg}", None)
+        if e.errno == 1062: # Chave duplicada
+            return (False, "Erro: Este ator já faz parte do elenco deste filme.", sql_query)
+        elif e.errno == 1452: # Falha de FK
+            return (False, "Erro: O filme especificado não existe.", sql_query)
+        else: # Outros erros
+            return (False, f"Erro ao adicionar elenco: {e.msg}", sql_query)
     finally:
         conn.close()
 
@@ -84,7 +84,7 @@ def atualizar_elenco(num_filme: int, nome_ator: str, novo_protagonista: bool):
         return (True, f"Status de protagonista de '{nome_ator}' no filme #{num_filme} atualizado com sucesso.", sql_query)
     except mysql.connector.Error as e:
         conn.rollback()
-        return (False, f"Erro ao atualizar elenco: {e.msg}", None)
+        return (False, f"Erro ao atualizar elenco: {e.msg}", sql_query)
     finally:
         conn.close()
 
@@ -112,9 +112,9 @@ def atualizar_nome_ator(num_filme: int, nome_ator_antigo: str, novo_nome_ator: s
     except mysql.connector.Error as e:
         conn.rollback()
         if e.errno == 1062: # Duplicate entry for primary key (num_filme, novo_nome_ator)
-            return (False, f"Erro: O nome '{novo_nome_ator}' já existe para um ator neste filme.", None)
+            return (False, f"Erro: O nome '{novo_nome_ator}' já existe para um ator neste filme.", sql_query)
         else:
-            return (False, f"Erro ao atualizar nome do ator: {e.msg}", None)
+            return (False, f"Erro ao atualizar nome do ator: {e.msg}", sql_query)
     finally:
         conn.close()
 
@@ -139,7 +139,7 @@ def remover_elenco(num_filme: int, nome_ator: str):
         return (True, f"Ator '{nome_ator}' removido do filme #{num_filme} com sucesso.", sql_query)
     except mysql.connector.Error as e:
         conn.rollback()
-        return (False, f"Erro ao remover elenco: {e.msg}", None)
+        return (False, f"Erro ao remover elenco: {e.msg}", sql_query)
     finally:
         conn.close()
 
@@ -209,21 +209,13 @@ def obter_atores_sem_papeis_protagonista():
     try:
         cursor = conn.cursor(dictionary=True)
         sql_query = """
-            SELECT
-                E.nome_ator,
-                GROUP_CONCAT(F.nome SEPARATOR '; ') AS filmes_atuados
-            FROM
-                Elenco E
-            JOIN
-                Filme F ON E.num_filme = F.num_filme
-            WHERE
-                E.protagonista = FALSE
-            GROUP BY
-                E.nome_ator
-            HAVING
-                COUNT(DISTINCT E.num_filme) = SUM(CASE WHEN E.protagonista = FALSE THEN 1 ELSE 0 END)
-            ORDER BY
-                E.nome_ator;
+            SELECT E.nome_ator, GROUP_CONCAT(F.nome SEPARATOR '; ') AS filmes_atuados
+            FROM Elenco E
+            JOIN Filme F ON E.num_filme = F.num_filme
+            WHERE E.protagonista = FALSE
+            GROUP BY E.nome_ator
+            HAVING COUNT(DISTINCT E.num_filme) = SUM(CASE WHEN E.protagonista = FALSE THEN 1 ELSE 0 END)
+            ORDER BY E.nome_ator;
         """
         cursor.execute(sql_query)
         resultados = cursor.fetchall()

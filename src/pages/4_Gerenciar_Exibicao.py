@@ -15,7 +15,6 @@ tabela_placeholder = st.empty()
 
 
 st.subheader("Agendar Nova Exibição")
-# Obter lista de filmes e canais para seleção
 filmes_ok, filmes = crud_filme.listar_filmes()
 canais_ok, canais = crud_canal.listar_canais()
 
@@ -58,6 +57,9 @@ if submit_add:
             st.code(sql_query, language="sql")
 
 
+st.markdown("---")
+
+
 st.subheader("Atualizar Exibição")
 exibicoes_ok, exibicoes_data = crud_exibicao.listar_exibicoes()
 
@@ -73,6 +75,7 @@ if exibicoes_ok and exibicoes_data:
             display_time = time(hours, minutes, seconds)
         else:
             display_time = e['hora_exibicao']
+            
         opcao = f"{e['nome_filme']} ({e['nome_canal']}) - {e['data_exibicao'].strftime('%d/%m/%Y')} {display_time.strftime('%H:%M')}"
         exibicao_opcoes.append(opcao)
         exibicao_map[opcao] = {
@@ -170,3 +173,23 @@ if exibicoes_ok:
     tabela_placeholder.dataframe(df, use_container_width=True)
 else:
     tabela_placeholder.error(exibicoes_data_table)
+
+st.markdown("---")
+st.subheader("Demonstrar Violação de Integridade Referencial")
+if st.button("Demonstrar Violação: Canal Inexistente", key="btn_violacao_canal"):
+    if filmes_ok and filmes:
+        filme_para_violacao = filmes[0]['num_filme']
+        success, msg, sql_query = crud_exibicao.adicionar_exibicao(
+            filme_para_violacao,
+            777,
+            date.today(),
+            time(10, 0, 0)
+        )
+        if success:
+            st.success(msg)
+        else:
+            st.error(f"Violação demonstrada: {msg}")
+            if sql_query:
+                st.code(sql_query, language="sql")
+    else:
+        st.warning("Não há filmes cadastrados para demonstrar a violação. Cadastre um filme primeiro.")

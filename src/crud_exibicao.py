@@ -8,13 +8,12 @@ from datetime import date, time, timedelta
 def adicionar_exibicao(num_filme: int, num_canal: int, data_exibicao: date, hora_exibicao: time):
     """
     Insere uma nova exibição na tabela Exibicao.
-    Retorna (True, mensagem_sucesso, sql_query) ou (False, mensagem_erro, None).
+    Retorna (True, mensagem_sucesso, sql_query) ou (False, mensagem_erro, sql_query).
     """
     conn = db_connection.get_connection()
     if conn is None:
-        return (False, "Falha na conexão com o banco de dados.", None)
+        return (False, "Falha na conexão com o banco de dados.", None) 
     
-    # SQL para exibição
     sql_query = f"INSERT INTO Exibicao (num_filme, num_canal, data_exibicao, hora_exibicao) VALUES ({num_filme}, {num_canal}, '{data_exibicao}', '{hora_exibicao}')"
     
     try:
@@ -27,12 +26,12 @@ def adicionar_exibicao(num_filme: int, num_canal: int, data_exibicao: date, hora
         return (True, f"Exibição agendada para o filme #{num_filme} no canal #{num_canal} em {data_exibicao} às {hora_exibicao} com sucesso.", sql_query)
     except mysql.connector.Error as e:
         conn.rollback()
-        if e.errno == 1062: # Duplicate entry for primary key
-            return (False, "Erro: Já existe uma exibição agendada para este filme/canal/data/hora.", None)
-        elif e.errno == 1452: # Foreign key constraint fails
-            return (False, "Erro: O filme ou canal especificado não existe.", None)
-        else:
-            return (False, f"Erro ao adicionar exibição: {e.msg}", None)
+        if e.errno == 1062: # Chave duplicada
+            return (False, "Erro: Já existe uma exibição agendada para este filme/canal/data/hora.", sql_query)
+        elif e.errno == 1452: # Falha de FK
+            return (False, "Erro: O filme ou canal especificado não existe.", sql_query)
+        else: # Outros erros
+            return (False, f"Erro ao adicionar exibição: {e.msg}", sql_query)
     finally:
         conn.close()
 
@@ -71,6 +70,7 @@ def atualizar_exibicao(num_filme: int, num_canal: int, data_exibicao: date, hora
     conn = db_connection.get_connection()
     if conn is None:
         return (False, "Falha na conexão com o banco de dados.", None)
+
     sql_query = f"UPDATE Exibicao SET data_exibicao = '{nova_data_exibicao}', hora_exibicao = '{nova_hora_exibicao}' WHERE num_filme = {num_filme} AND num_canal = {num_canal} AND data_exibicao = '{data_exibicao}' AND hora_exibicao = '{hora_exibicao}'"
 
     try:
@@ -90,9 +90,9 @@ def atualizar_exibicao(num_filme: int, num_canal: int, data_exibicao: date, hora
     except mysql.connector.Error as e:
         conn.rollback()
         if e.errno == 1062: # Duplicate entry for primary key
-            return (False, "Erro: Já existe uma exibição com a nova data/hora para este filme/canal.", None)
+            return (False, "Erro: Já existe uma exibição com a nova data/hora para este filme/canal.", sql_query)
         else:
-            return (False, f"Erro ao atualizar exibição: {e.msg}", None)
+            return (False, f"Erro ao atualizar exibição: {e.msg}", sql_query)
     finally:
         conn.close()
 
@@ -119,7 +119,7 @@ def remover_exibicao(num_filme: int, num_canal: int, data_exibicao: date, hora_e
         return (True, f"Exibição do filme #{num_filme} no canal #{num_canal} removida com sucesso.", sql_query)
     except mysql.connector.Error as e:
         conn.rollback()
-        return (False, f"Erro ao remover exibição: {e.msg}", None)
+        return (False, f"Erro ao remover exibição: {e.msg}", sql_query)
     finally:
         conn.close()
 

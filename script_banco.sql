@@ -179,8 +179,8 @@ INSERT INTO Elenco VALUES
 (90025, 'Laura Linney', 0);
 
 -- Aplicando a restrição de integridade referencial (chaves estrangeiras - FK)
-ALTER TABLE Exibicao	ADD FOREIGN KEY(num_filme) REFERENCES Filme(num_filme);
-ALTER TABLE Exibicao	ADD FOREIGN KEY(num_canal) REFERENCES Canal(num_canal);
-ALTER TABLE Elenco	ADD FOREIGN KEY(num_filme) REFERENCES Filme(num_filme);
+ALTER TABLE Exibicao	ADD FOREIGN KEY(num_filme) REFERENCES Filme(num_filme) ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE Exibicao	ADD FOREIGN KEY(num_canal) REFERENCES Canal(num_canal) ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE Elenco	ADD FOREIGN KEY(num_filme) REFERENCES Filme(num_filme) ON DELETE CASCADE ON UPDATE CASCADE;
 
 COMMIT;

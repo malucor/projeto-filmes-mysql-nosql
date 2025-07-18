@@ -26,6 +26,9 @@ if submit_add:
         st.code(sql_query, language="sql")
 
 
+st.markdown("---")
+
+
 st.subheader("Atualizar Canal")
 
 canal_opcoes = []
@@ -44,7 +47,7 @@ if canal_opcoes:
             novo_nome_canal = st.text_input("Novo nome do canal", value=_selected_canal_nome)
             submit_update = st.form_submit_button("Atualizar")
         if submit_update and _selected_canal_id is not None:
-            success, msg, sql_query = crud_canal.atualizar_canal(_selected_canal_id, novo_nome_canal)
+            success, msg = crud_canal.atualizar_canal(_selected_canal_id, novo_nome_canal)
             if success:
                 st.success(msg)
             else:
@@ -62,7 +65,7 @@ if canal_opcoes:
         submit_del = st.form_submit_button("Remover")
     if submit_del:
         canal_id = int(escolha_del.split(" - ")[0])
-        success, msg, sql_query = crud_canal.remover_canal(canal_id)
+        success, msg = crud_canal.remover_canal(canal_id)
         if success:
             st.success(msg)
         else:
@@ -79,3 +82,17 @@ if canais_ok:
     tabela_placeholder.dataframe(df, use_container_width=True)
 else:
     tabela_placeholder.error(canais_data)
+
+st.markdown("---")
+st.subheader("Demonstrar Violação de Singularidade (Chave Duplicada)")
+if st.button("Demonstrar Violação: Chave Duplicada (Canal 111)", key="btn_violacao_singularidade_canal"):
+    success, msg, sql_query = crud_canal.adicionar_canal(
+        111,
+        "Canal Duplicado Teste"
+    )
+    if success:
+        st.success(msg)
+    else:
+        st.error(f"Violação demonstrada: {msg}")
+        if sql_query:
+            st.code(sql_query, language="sql")
